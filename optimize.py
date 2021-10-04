@@ -93,4 +93,39 @@ def f(x, noise_level=noise_level, width=a, length=b):
                sum+= 1e9
     return sum+ np.random.randn() * noise_level
 
-     
+
+min=[]
+max=[]
+for i in range(0,110):
+  min.append(-950)
+  min.append(-950)
+  min.append(-2945-200)
+  max.append(950)
+  max.append(950)
+  max.append(-2945+200)
+
+
+min=np.array(min)
+max=np.array(max)
+
+res = gp_minimize(f,                   # the function to minimize
+                  [(min[i],max[i])  for i in range(0,330)],      # the bounds on each dimension of x
+                  acq_func="EI",       # the acquisition function
+                  n_calls=25,          # the number of evaluations of f
+                  n_random_starts=25,  # the number of random initialization points
+                  noise=0.5**2,        # the noise level (optional)
+                  random_state=1234)   # the random seed
+
+
+print(res.x)
+
+
+
+from skopt.plots import plot_convergence
+plot_convergence(res)
+
+
+
+
+
+
