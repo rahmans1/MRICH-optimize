@@ -79,6 +79,18 @@ def Intersects(r1, r2, a=a/2 , b=b/2):    # Enter the position of the center for
      return True    
 
 
+noise_level = 0.2
 
+def f(x, noise_level=noise_level, width=a, length=b):
+    sum=0
+    x=np.array(x).reshape(-1,3)
+    print(x)
+    for i in x:
+        sum+= -1*a**2/np.sum(np.array(i)**2)
+    for i in range(0,len(x)):
+        for j in range(0,i):
+           if(Intersects(np.array(x[i]), np.array(x[j]))):
+               sum+= 1e9
+    return sum+ np.random.randn() * noise_level
 
      
