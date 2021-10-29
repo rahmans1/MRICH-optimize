@@ -1,5 +1,55 @@
 from skopt import gp_minimize
 from skopt.plots import plot_convergence
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from scipy import linalg as lin
+import sys
+
+n=110
+a= np.sqrt(np.pi*(950**2-100**2)/n)   # calculate cross-sectional size
+b= 200                                    # 200 mm= zlength of each module
+
+def Transform(x,y,z,a,b,c):  
+  xyz=np.zeros(3)
+  t=-1*np.arctan(y/z)
+  p=np.arctan(x/z)
+  xyz[0]= a*np.cos(p)+np.sin(p)*(b*np.sin(t)+c*np.cos(t))
+  xyz[1]= b*np.cos(t)-c*np.sin(t)
+  xyz[2]= -a*np.sin(p)+np.cos(p)*(b*np.sin(t)+c*np.cos(t))
+  return [xyz]
+  
+  
+
+def RotateOrigin(x,y,z,v, coor, a, b):   # Enter coordinate of center, vertex number, type of coordinate and half lengths along x,y,z
+  xyz=None
+  
+  if v==0:
+    xyz = Transform(x,y,z,-a,-a,-b)
+  elif v==1:
+    xyz = Transform(x,y,z,-a, a, -b)
+  elif v==2:
+    xyz = Transform(x,y,z, a, a, -b)
+  elif v==3:
+    xyz = Transform(x,y,z, a, -a, -b)
+  elif v==4:
+    xyz = Transform(x,y,z,-a, -a, b)
+  elif v==5:
+    xyz = Transform(x,y,z,-a, a, b)
+  elif v==6:
+    xyz = Transform(x,y,z, a, a, b)
+  elif v==7:
+    xyz = Transform(x,y,z, a, -a, b)
+
+  if coor=='x':
+    return xyz[0][0]
+  elif coor=='y':
+    return xyz[0][1]
+  elif coor=='z':
+    return xyz[0][2]
+  else:
+    return xyz[0]
+
 
 def Normal(R):
    A1 = np.cross(R[7]-R[2], R[3]-R[2])
@@ -9,14 +59,14 @@ def Normal(R):
    A3 = np.cross(R[5]-R[6], R[7]-R[6])
    A3 /= np.linalg.norm(A3)
 
-   print(R)
-   print(A1)
-   print(A2)
-   print(A3)
+ #  print(R)
+ #  print(A1)
+ #  print(A2)
+ #  print(A3)
 
-   print(np.dot(A1,A3))
-   print(np.dot(A1,A2))
-   print(np.dot(A2,A3))
+ #  print(np.dot(A1,A3))
+ #  print(np.dot(A1,A2))
+ #  print(np.dot(A2,A3))
    
    return [A1,A2,A3]
 
@@ -41,15 +91,15 @@ def Intersects(r1, r2, a=a/2 , b=b/2):    # Enter the position of the center for
         showscale=True
       ) for R in [R1,R2]     
    ])
-   fig.show()
+   #fig.show()
 
    A = Normal(R1)
    B = Normal(R2)
 
  
-   print(A)
-   print(B)
-   print(d)
+ #  print(A)
+ #  print(B)
+ #  print(d)
 
    # Apply separating axis theorem
    cross=[[np.cross(A[i], B[j])/np.linalg.norm(np.cross(A[i], B[j])) for i in range(0,3)] for j in range(0,3)]   
@@ -111,10 +161,13 @@ max=np.array(max)
 res = gp_minimize(f,                   # the function to minimize
                   [(min[i],max[i])  for i in range(0,330)],      # the bounds on each dimension of x
                   acq_func="EI",       # the acquisition function
+                  acq_optimizer="lbfgs", # the acquistion optimizer
+                  n_restarts_optimizer=5, # restart optimization with 5 local minima as initial points
                   n_calls=25,          # the number of evaluations of f
-                  n_random_starts=25,  # the number of random initialization points
+                  n_initial_points=25,  # the number of random initialization points
                   noise=0.5**2,        # the noise level (optional)
-                  random_state=1234)   # the random seed
+                  random_state=1234,
+                  n_jobs=8)   # the random seed
 
 
 print(res.x)
